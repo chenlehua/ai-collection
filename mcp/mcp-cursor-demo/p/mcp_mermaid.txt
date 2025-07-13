@@ -1,0 +1,34 @@
+```mermaid
+graph LR
+    subgraph MCP 生态系统
+        A[MCP Hosts] --> B(MCP Clients)
+        B --> C{MCP Servers}
+    end
+
+    subgraph MCP Hosts 示例
+        A1(Claude Desktop) --> A
+        A2(IDE) --> A
+        A3(AI 工具) --> A
+    end
+
+    subgraph MCP Servers 访问
+        C --> D[本地数据源]
+        C --> E[远程服务]
+    end
+
+    subgraph 本地数据源 示例
+        D1(计算机文件) --> D
+        D2(数据库) --> D
+        D3(服务) --> D
+    end
+
+    subgraph 远程服务 示例
+        E1(外部 API 系统) --> E
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#fdd,stroke:#333,stroke-width:2px
+    style E fill:#dff,stroke:#333,stroke-width:2px
+```
