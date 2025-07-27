@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>语音助手</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            background-color: #f4f4f4;
+        }
+
+        #chat {
+            background-color: white;
+            padding: 1em;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            margin: 1em 0;
+        }
+
+        .user {
+            font-weight: bold;
+        }
+
+        .bot {
+            color: #007acc;
+        }
+
+        button {
+            padding: 0.5em 1em;
+            font-size: 1em;
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+<div id="chat">
+    <h2>语音助手</h2>
+    <div id="messages"></div>
+    <button id="recordBtn">🎤 录音并发送</button>
+</div>
+
+<script>
+    const ws = new WebSocket("ws://127.0.0.1:7860/ws");
+    const messagesDiv = document.getElementById("messages");
+    const recordBtn = document.getElementById("recordBtn");
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    recordBtn.onclick = async () => {
+        audioChunks = [];
+        if (!mediaRecorder) {
+            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, {type: 'audio/wav'});
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                ws.send(arrayBuffer);
+            };
+        }
+
+        mediaRecorder.start();
+        recordBtn.disabled = true;
+        recordBtn.textContent = "录音中...点击停止";
+
+        setTimeout(() => {
+            mediaRecorder.stop();
+            recordBtn.disabled = false;
+            recordBtn.textContent = "🎤 录音并发送";
+        }, 3000);
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const audioUrl = data.audio_url;
+        const audio = new Audio(audioUrl);
+        audio.play();
+
+        const msg = document.createElement("div");
+        msg.className = "message bot";
+        msg.innerText = "🤖: 正在播放回复...";
+        messagesDiv.appendChild(msg);
+    };
+</script>
+</body>
+</html>

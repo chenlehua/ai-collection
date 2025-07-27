@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>语音助手</title>
+</head>
+<body>
+<h1>语音助手（支持唤醒词）</h1>
+<audio id="responseAudio" controls></audio>
+<p id="status">页面加载中...</p>
+
+<script>
+    window.onload = async () => {
+        const status = document.getElementById("status");
+        const audio = document.getElementById("responseAudio");
+        const ws = new WebSocket("ws://127.0.0.1:7860/ws");
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+            const mediaRecorder = new MediaRecorder(stream);
+            let audioChunks = [];
+
+            status.innerText = "🎤 自动监听中...";
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    audioChunks.push(e.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, {type: 'audio/webm'});
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                ws.send(arrayBuffer);
+                audioChunks = [];
+            };
+
+            // 每 3 秒录制一次音频发送
+            setInterval(() => {
+                if (mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                    mediaRecorder.start();
+                }
+            }, 3000);
+
+            mediaRecorder.start();
+
+        } catch (err) {
+            status.innerText = "❌ 无法访问麦克风：" + err.message;
+        }
+
+        ws.onmessage = event => {
+            const data = JSON.parse(event.data);
+            if (data.audio_url) {
+                audio.src = data.audio_url;
+                audio.play();
+                status.innerText = "✅ 收到回复，正在播放...";
+            } else if (data.error) {
+                status.innerText = "⚠️ " + data.error;
+            } else if (data.status) {
+                status.innerText = data.status;
+            }
+        };
+    };
+</script>
+</body>
+</html>

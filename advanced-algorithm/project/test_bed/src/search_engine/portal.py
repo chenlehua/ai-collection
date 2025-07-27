@@ -8,6 +8,9 @@ from .training_tab import build_training_tab
 from .monitoring_tab import build_monitoring_tab
 from .service_manager import service_manager
 
+def generate_contents(message, history):
+    pass
+
 class SearchUI:
     def __init__(self):
         # 使用服务管理器
@@ -22,7 +25,7 @@ class SearchUI:
         self.current_query = ""
         self.setup_ui()
 
-    def setup_ui(self):
+    def setup_ui(self, transcribe=None):
         with gr.Blocks(title="搜索引擎测试床 - 服务架构版本") as self.interface:
             gr.Markdown("""
             # 🔬 搜索引擎测试床 - 服务架构版本
@@ -37,7 +40,30 @@ class SearchUI:
             - 索引服务: ✅ 运行中
             - 模型服务: ✅ 运行中
             """)
-            
+
+            # 定义语音（mic）转文本的接口
+            gr.Interface(
+                fn=transcribe,  # 执行转录的函数
+                inputs=[
+                    gr.Audio(sources="microphone", type="filepath"),  # 使用麦克风录制的音频输入
+                ],
+                outputs="text",  # 输出为文本
+                flagging_mode="never",  # 禁用标记功能
+            )
+
+            contents_chatbot = gr.Chatbot(
+                placeholder="<strong>AI 一键生成 PPT</strong><br><br>输入你的主题内容或上传音频文件",
+                height=800,
+                type="messages",
+            )
+
+            gr.ChatInterface(
+                fn=generate_contents,  # 处理用户输入的函数
+                chatbot=contents_chatbot,  # 绑定的聊天机器人
+                type="messages",
+                multimodal=True  # 支持多模态输入（文本和文件）
+            )
+
             with gr.Tabs():
                 with gr.Tab("🏗️ 第一部分：离线索引构建"):
                     build_index_tab(self.index_service)

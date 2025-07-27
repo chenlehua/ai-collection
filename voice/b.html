@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>语音助手</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            background-color: #f4f4f4;
+        }
+
+        #chat {
+            background-color: white;
+            padding: 1em;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            margin: 1em 0;
+        }
+
+        .user {
+            font-weight: bold;
+        }
+
+        .bot {
+            color: #007acc;
+        }
+
+        button {
+            padding: 0.5em 1em;
+            font-size: 1em;
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+<div id="chat">
+    <h2>语音助手</h2>
+    <div id="status"></div>
+</div>
+
+<script>
+    const ws = new WebSocket("ws://127.0.0.1:7860/ws");
+    const status = document.getElementById("status");
+    const audio = document.getElementById("responseAudio");
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    async function startContinuousListening() {
+        const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        status.innerText = "正在持续监听唤醒词...";
+
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.start(5000); // 每段录音间隔：3 秒
+
+        mediaRecorder.ondataavailable = async (e) => {
+            const audioBlob = new Blob([e.data], {type: 'audio/wav'});
+            const arrayBuffer = await audioBlob.arrayBuffer();
+            ws.send(arrayBuffer);
+            status.innerText = "检测中...";
+        };
+
+        // 循环监听
+        mediaRecorder.onstop = () => {
+            mediaRecorder.start(5000);
+        };
+    }
+
+    ws.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data.audio_url) {
+            audio.src = data.audio_url;
+            audio.play();
+            status.innerText = "🗣️ 收到回复，正在播放...";
+        } else if (data.error) {
+            status.innerText = "⚠️ " + data.error;
+        } else if (data.status) {
+            status.innerText = data.status;
+        }
+    };
+
+    // 页面加载完成后自动开始监听
+    window.onload = () => {
+        startContinuousListening().catch(err => {
+            status.innerText = "🎤 无法访问麦克风：" + err.message;
+        });
+    };
+</script>
