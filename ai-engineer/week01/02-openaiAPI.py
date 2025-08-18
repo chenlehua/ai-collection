@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 api_key = os.getenv('V3_API_KEY')
-print(api_key)
 print(f"-- debug -- openai api key is {api_key[0:10]}******")
 
 client = OpenAI(
