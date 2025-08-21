@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
-api_key= os.getenv('V3_API_KEY')   
+api_key= "sk-i9BtJ1yrAqTkr3uNCdA564Db27334bBcB917444b563e4dCe"
 
 # 初始化 OpenAI 客户端
 client = OpenAI(
